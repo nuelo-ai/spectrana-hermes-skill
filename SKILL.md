@@ -18,7 +18,7 @@ Spectrana is Nuelo's AI-powered data analytics platform. Use the REST API to upl
 ### Base URL
 
 ```text
-https://api.spectrana.nuelo.ai
+https://api.spectra.nuelo.ai
 ```
 
 ### Authentication
@@ -106,7 +106,7 @@ If the user provides a new local/attached file, confirm before uploading:
 Upload via direct file transfer only:
 
 ```bash
-curl -s -X POST "https://api.spectrana.nuelo.ai/api/v1/files/upload" \
+curl -s -X POST "https://api.spectra.nuelo.ai/api/v1/files/upload" \
   -H "Authorization: Bearer $SPECTRANA_API_KEY" \
   -F "file=@/absolute/path/to/file.csv"
 ```
@@ -206,27 +206,27 @@ Chart styling guidelines:
 ### Health Check
 
 ```bash
-curl -s "https://api.spectrana.nuelo.ai/api/v1/health"
+curl -s "https://api.spectra.nuelo.ai/api/v1/health"
 ```
 
 ### List Files
 
 ```bash
-curl -s -X GET "https://api.spectrana.nuelo.ai/api/v1/files" \
+curl -s -X GET "https://api.spectra.nuelo.ai/api/v1/files" \
   -H "Authorization: Bearer $SPECTRANA_API_KEY"
 ```
 
 ### Get File Context
 
 ```bash
-curl -s -X GET "https://api.spectrana.nuelo.ai/api/v1/files/{file_id}/context" \
+curl -s -X GET "https://api.spectra.nuelo.ai/api/v1/files/{file_id}/context" \
   -H "Authorization: Bearer $SPECTRANA_API_KEY"
 ```
 
 ### Run Query
 
 ```bash
-curl -s -X POST "https://api.spectrana.nuelo.ai/api/v1/chat/query" \
+curl -s -X POST "https://api.spectra.nuelo.ai/api/v1/chat/query" \
   -H "Authorization: Bearer $SPECTRANA_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"query":"Your question","file_ids":["file-id"],"web_search_enabled":false}'
@@ -237,7 +237,7 @@ curl -s -X POST "https://api.spectrana.nuelo.ai/api/v1/chat/query" \
 Confirm with user first, then:
 
 ```bash
-curl -s -X DELETE "https://api.spectrana.nuelo.ai/api/v1/files/{file_id}" \
+curl -s -X DELETE "https://api.spectra.nuelo.ai/api/v1/files/{file_id}" \
   -H "Authorization: Bearer $SPECTRANA_API_KEY"
 ```
 
