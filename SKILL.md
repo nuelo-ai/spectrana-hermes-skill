@@ -1,24 +1,24 @@
 ---
-name: spectra-data-analysis
-description: "Use this skill whenever the user wants to analyze data using Spectra/Spectrana via REST API. Triggers include: uploading CSV or Excel datasets, asking questions about data, requesting charts or visualizations, exploring patterns or trends, comparing columns, finding anomalies, generating statistical summaries, listing uploaded Spectra files, or deleting uploaded datasets. Load this skill BEFORE making Spectra API calls."
+name: spectrana-data-analysis
+description: "Use this skill whenever the user wants to analyze data using Spectrana via REST API. Triggers include: uploading CSV or Excel datasets, asking questions about data, requesting charts or visualizations, exploring patterns or trends, comparing columns, finding anomalies, generating statistical summaries, listing uploaded Spectrana files, or deleting uploaded datasets. Load this skill BEFORE making Spectrana API calls."
 version: 1.0.0
 author: Hermes Agent + Nuelo
 license: MIT
 metadata:
   hermes:
-    tags: [spectra, spectrana, data-analysis, analytics, rest-api, plotly, discord]
+    tags: [spectrana, data-analysis, analytics, rest-api, plotly, discord]
 ---
 
-# Spectra/Spectrana Data Analysis Skill
+# Spectrana Data Analysis Skill
 
-Spectra/Spectrana is Nuelo's AI-powered data analytics platform. Use the REST API to upload datasets, query data in natural language, retrieve dataset context, manage files, and render returned Plotly charts.
+Spectrana is Nuelo's AI-powered data analytics platform. Use the REST API to upload datasets, query data in natural language, retrieve dataset context, manage files, and render returned Plotly charts.
 
 ## Configuration
 
 ### Base URL
 
 ```text
-https://api.spectra.nuelo.ai
+https://api.spectrana.nuelo.ai
 ```
 
 ### Authentication
@@ -32,7 +32,7 @@ All API calls except `/api/v1/health` require a Bearer token. In Hermes, the API
 Expected environment variable:
 
 ```bash
-SPECTRA_API_KEY=spe_...
+SPECTRANA_API_KEY=spe_...
 ```
 
 Never print or expose the key. When showing commands to users, redact the token as `Bearer ***`.
@@ -50,12 +50,12 @@ Safer script-loading pattern:
 ```python
 from pathlib import Path
 
-def load_spectra_key() -> str:
+def load_spectrana_key() -> str:
     env = Path.home() / ".hermes" / ".env"
     for line in env.read_text().splitlines():
-        if line.startswith("SPECTRA_API_KEY="):
+        if line.startswith("SPECTRANA_API_KEY="):
             return line.split("=", 1)[1].strip().strip('"').strip("'")
-    raise RuntimeError("SPECTRA_API_KEY is not configured in ~/.hermes/.env")
+    raise RuntimeError("SPECTRANA_API_KEY is not configured in ~/.hermes/.env")
 ```
 
 ## Available REST API Endpoints
@@ -78,19 +78,19 @@ def load_spectra_key() -> str:
 - Analysis queries cost credits.
 - Confirm with the user before uploading a new dataset.
 - Confirm with the user before deleting any dataset.
-- Before running analysis queries, clearly state that queries may consume Spectra credits.
+- Before running analysis queries, clearly state that queries may consume Spectrana credits.
 - Upload files directly via curl or Python multipart upload. Do **not** load raw dataset contents into the LLM context.
-- Treat Spectra's returned `analysis` as the expert output. Do not add your own interpretation unless explicitly labeled as separate.
+- Treat Spectrana's returned `analysis` as the expert output. Do not add your own interpretation unless explicitly labeled as separate.
 
 ## Core Workflow
 
 ### Step 0 — Verify API Key
 
-Before authenticated calls, verify `SPECTRA_API_KEY` is available in `~/.hermes/.env`. If missing or unauthorized, ask the user for a valid `spe_...` key.
+Before authenticated calls, verify `SPECTRANA_API_KEY` is available in `~/.hermes/.env`. If missing or unauthorized, ask the user for a valid `spe_...` key.
 
 ### Step 1 — Identify or Upload the File
 
-If the user refers to an existing Spectra file, call:
+If the user refers to an existing Spectrana file, call:
 
 ```text
 GET /api/v1/files
@@ -98,16 +98,16 @@ GET /api/v1/files
 
 If the user provides a new local/attached file, confirm before uploading:
 
-> Before I upload this to Spectra, I want to flag that analysis queries cost credits. Which would you prefer?
+> Before I upload this to Spectrana, I want to flag that analysis queries cost credits. Which would you prefer?
 > 1. Upload now and analyze
 > 2. Upload only
-> 3. You upload manually through https://app.spectra.nuelo.ai, then I analyze it here
+> 3. You upload manually through https://app.spectrana.nuelo.ai, then I analyze it here
 
 Upload via direct file transfer only:
 
 ```bash
-curl -s -X POST "https://api.spectra.nuelo.ai/api/v1/files/upload" \
-  -H "Authorization: Bearer $SPECTRA_API_KEY" \
+curl -s -X POST "https://api.spectrana.nuelo.ai/api/v1/files/upload" \
+  -H "Authorization: Bearer $SPECTRANA_API_KEY" \
   -F "file=@/absolute/path/to/file.csv"
 ```
 
@@ -151,8 +151,8 @@ credits_used = payload.get("credits_used", result.get("credits_used"))
 
 Result fields may include:
 
-- `analysis` — Spectra's narrative explanation
-- `generated_code` — Python code generated by Spectra
+- `analysis` — Spectrana's narrative explanation
+- `generated_code` — Python code generated by Spectrana
 - `execution_result` — Raw computed results, often JSON string
 - `chart_specs` — Plotly chart specification, often JSON string, null, or an empty string
 - `chart_error` — chart generation error details, if any
@@ -162,16 +162,16 @@ If the user explicitly says to ask a question “as is” / “do not amend it,�
 
 ### Step 4 — Present Results
 
-When presenting Spectra results, include:
+When presenting Spectrana results, include:
 
-1. **Spectra Analysis** — Present the `analysis` field faithfully. Do not paraphrase into new conclusions.
+1. **Spectrana Analysis** — Present the `analysis` field faithfully. Do not paraphrase into new conclusions.
 2. **Tables / Execution Results** — If `execution_result` contains tabular data, format it as a markdown table.
 3. **Chart** — If `chart_specs` is non-null, render and send the chart. This is mandatory.
 4. **Follow-up Suggestions** — Include if provided.
 
 Clearly label source:
 
-- `Spectra analysis:` for Spectra-sourced content
+- `Spectrana analysis:` for Spectrana-sourced content
 - `My note:` only for separate operational comments or formatting notes
 
 ## Chart Rendering for Discord
@@ -179,7 +179,7 @@ Clearly label source:
 If `chart_specs` is returned:
 
 1. Parse the JSON string into Plotly `data` and `layout`.
-2. Save the raw Spectra API response JSON under a local output directory such as:
+2. Save the raw Spectrana API response JSON under a local output directory such as:
 
 ```text
 ~/hermes-projects/Spectrana/outputs/YYYY-MM-DD/{descriptive-name}-response.json
@@ -206,28 +206,28 @@ Chart styling guidelines:
 ### Health Check
 
 ```bash
-curl -s "https://api.spectra.nuelo.ai/api/v1/health"
+curl -s "https://api.spectrana.nuelo.ai/api/v1/health"
 ```
 
 ### List Files
 
 ```bash
-curl -s -X GET "https://api.spectra.nuelo.ai/api/v1/files" \
-  -H "Authorization: Bearer $SPECTRA_API_KEY"
+curl -s -X GET "https://api.spectrana.nuelo.ai/api/v1/files" \
+  -H "Authorization: Bearer $SPECTRANA_API_KEY"
 ```
 
 ### Get File Context
 
 ```bash
-curl -s -X GET "https://api.spectra.nuelo.ai/api/v1/files/{file_id}/context" \
-  -H "Authorization: Bearer $SPECTRA_API_KEY"
+curl -s -X GET "https://api.spectrana.nuelo.ai/api/v1/files/{file_id}/context" \
+  -H "Authorization: Bearer $SPECTRANA_API_KEY"
 ```
 
 ### Run Query
 
 ```bash
-curl -s -X POST "https://api.spectra.nuelo.ai/api/v1/chat/query" \
-  -H "Authorization: Bearer $SPECTRA_API_KEY" \
+curl -s -X POST "https://api.spectrana.nuelo.ai/api/v1/chat/query" \
+  -H "Authorization: Bearer $SPECTRANA_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"query":"Your question","file_ids":["file-id"],"web_search_enabled":false}'
 ```
@@ -237,8 +237,8 @@ curl -s -X POST "https://api.spectra.nuelo.ai/api/v1/chat/query" \
 Confirm with user first, then:
 
 ```bash
-curl -s -X DELETE "https://api.spectra.nuelo.ai/api/v1/files/{file_id}" \
-  -H "Authorization: Bearer $SPECTRA_API_KEY"
+curl -s -X DELETE "https://api.spectrana.nuelo.ai/api/v1/files/{file_id}" \
+  -H "Authorization: Bearer $SPECTRANA_API_KEY"
 ```
 
 ## Error Handling
@@ -253,9 +253,9 @@ curl -s -X DELETE "https://api.spectra.nuelo.ai/api/v1/files/{file_id}" \
 
 ## Discord Channel Behavior
 
-This skill is especially relevant in the Majeve Systems `#spectrana` Discord channel, which is intended as a specialized Spectra/Spectrana data analytics agent channel. Keep replies practical, data-focused, and explicit about when Spectra credits may be used.
+This skill is especially relevant in the Majeve Systems `#spectrana` Discord channel, which is intended as a specialized Spectrana data analytics agent channel. Keep replies practical, data-focused, and explicit about when Spectrana credits may be used.
 
-When creating a new Spectrana-style analytics channel or reusable agent prompt, use `templates/spectrana-agent-channel.md` as the starter template. It includes the analytics-only scope rule, off-topic warning language, required `spectra-data-analysis` loading instruction, compact memory version, and a note that slash commands require Hermes gateway/command code rather than skill-file changes alone.
+When creating a new Spectrana-style analytics channel or reusable agent prompt, use `templates/spectrana-agent-channel.md` as the starter template. It includes the analytics-only scope rule, off-topic warning language, required `spectrana-data-analysis` loading instruction, compact memory version, and a note that slash commands require Hermes gateway/command code rather than skill-file changes alone.
 
 ### Discord Formatting Rules
 
@@ -283,7 +283,7 @@ Preferred formats:
 4. **Professional report images for analysis results — default standard:**
    - For comparison results, rankings, KPI summaries, margin analysis, business performance analysis, or any important table/chart, render a clean report card and attach a PNG screenshot/image to Discord.
    - If `chart_specs` is null/empty or no browser screenshot path is available, create the report image directly with Python + Pillow from `analysis` and parsed `execution_result`. This is preferred over sending only Markdown tables in Discord.
-   - The user likes a clean, sleek, professional report design. Use this as the default visual style for Spectra analysis output.
+   - The user likes a clean, sleek, professional report design. Use this as the default visual style for Spectrana analysis output.
    - Design style:
      - White card on very light slate background (`#f8fafc`).
      - Modern system font stack: `-apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Arial, sans-serif`.
@@ -292,30 +292,30 @@ Preferred formats:
      - Clean table with uppercase small headers, subtle borders, generous padding.
      - Inline horizontal bars for comparisons where useful.
      - Color coding: green for strong/positive, amber/orange for weaker positive/caution, red for negative/problem values.
-     - Caveat/notes box in a soft warning color when Spectra includes cautions.
-     - Footer with source: `Spectra/Spectrana API analysis result` and shortened file ID.
-   - Save the raw Spectra API response JSON under:
+     - Caveat/notes box in a soft warning color when Spectrana includes cautions.
+     - Footer with source: `Spectrana API analysis result` and shortened file ID.
+   - Save the raw Spectrana API response JSON under:
      `~/hermes-projects/Spectrana/outputs/YYYY-MM-DD/`
    - Save the generated report image as PNG under the same dated output directory.
    - Do **not** store report HTML by default. Only create/store HTML if the user explicitly asks for it or if needed as a temporary rendering implementation detail.
    - Verify the PNG is readable before delivery, then include it in Discord with:
      `MEDIA:/absolute/path/to/report.png`
-   - Still include Spectra's textual `analysis` in the Discord message, but keep it concise if the image already contains the main table.
+   - Still include Spectrana's textual `analysis` in the Discord message, but keep it concise if the image already contains the main table.
 
 Default for `GET /api/v1/files`: show a compact numbered list with shortened IDs and offer/attach a CSV if the list is long.
-Default for Spectra analysis/comparison output: attach a professional report image plus concise Spectra analysis text.
+Default for Spectrana analysis/comparison output: attach a professional report image plus concise Spectrana analysis text.
 
 ## Complex Analysis Failure Handling
 
-Spectra/Spectrana analysis queries consume credits and may fail when the prompt asks for a large multi-step calculation, chart generation, top-N selection, trend analysis, and narrative synthesis all at once. Handle this conservatively:
+Spectrana analysis queries consume credits and may fail when the prompt asks for a large multi-step calculation, chart generation, top-N selection, trend analysis, and narrative synthesis all at once. Handle this conservatively:
 
 1. **Before expensive/complex queries**, tell the user the query may consume credits.
 2. **Prefer scoped prompts**:
    - First identify the relevant cohort, segment, or subset required by the user's question.
    - Then run the trend, comparison, or summary query for that scoped subset.
    - Then create the Discord report image from the returned results.
-3. **If Spectra/Spectrana returns an API error, validation error, invalid generated code, or unusable analysis, do not present it as findings.**
-4. **Do not retry after a Spectra/Spectrana error.** Retrying can flood the Spectrana system and may consume/trigger repeated processing. Stop after the failed response and be honest with the requester.
+3. **If Spectrana returns an API error, validation error, invalid generated code, or unusable analysis, do not present it as findings.**
+4. **Do not retry after a Spectrana error.** Retrying can flood the Spectrana system and may consume/trigger repeated processing. Stop after the failed response and be honest with the requester.
 5. **Explain the error plainly in Discord:**
    - If the error is user-readable and not too technical, summarize it in simple language.
    - If the error is vague/technical/internal, say that Spectrana did not provide a meaningful or reliable analysis result.
@@ -323,4 +323,4 @@ Spectra/Spectrana analysis queries consume credits and may fail when the prompt 
 6. **Avoid compounding credit usage** after failures. If the API says credit was refunded, mention it. If the API call succeeded but the returned generated analysis was unusable, be transparent that credits may have been used but no reliable answer was produced.
 7. **When the user says “stop it,” stop immediately** and summarize only what was attempted; do not run more API/tool calls.
 
-For large or multi-step trend analyses, decompose the request into deterministic subtasks before calling Spectra, but still do not retry automatically if Spectra returns an error.
+For large or multi-step trend analyses, decompose the request into deterministic subtasks before calling Spectrana, but still do not retry automatically if Spectrana returns an error.

@@ -1,6 +1,6 @@
-# Spectra/Spectrana Hermes Skill
+# Spectrana Hermes Skill
 
-This project tracks the Hermes skill source for `spectra-data-analysis`.
+This project tracks the Hermes skill source for `spectrana-data-analysis`.
 
 ## Contents
 
@@ -12,7 +12,7 @@ This project tracks the Hermes skill source for `spectra-data-analysis`.
 The live local copy currently used by Hermes is:
 
 ```text
-~/.hermes/skills/data-science/spectra-data-analysis/
+~/.hermes/skills/data-science/spectrana-data-analysis/
 ```
 
 This project folder is the git-tracked source mirror so updates can be committed locally.
@@ -22,13 +22,13 @@ This project folder is the git-tracked source mirror so updates can be committed
 After editing the tracked copy here, sync it back into Hermes with:
 
 ```bash
-rsync -av --delete   /Users/nuelo/hermes-projects/spectrana-hermes-skill/   /Users/nuelo/.hermes/skills/data-science/spectra-data-analysis/   --exclude .git --exclude README.md --exclude .gitignore
+rsync -av --delete   /Users/nuelo/hermes-projects/spectrana-hermes-skill/   /Users/nuelo/.hermes/skills/data-science/spectrana-data-analysis/   --exclude .git --exclude README.md --exclude .gitignore
 ```
 
 After editing the live Hermes copy directly, refresh this tracked project with:
 
 ```bash
-rsync -av --delete   /Users/nuelo/.hermes/skills/data-science/spectra-data-analysis/   /Users/nuelo/hermes-projects/spectrana-hermes-skill/   --exclude .git
+rsync -av --delete   /Users/nuelo/.hermes/skills/data-science/spectrana-data-analysis/   /Users/nuelo/hermes-projects/spectrana-hermes-skill/   --exclude .git
 ```
 
 ## Validate
@@ -44,7 +44,7 @@ assert content.startswith('---')
 match = re.search(r'\n---\s*\n', content[3:])
 assert match, 'missing closing frontmatter delimiter'
 frontmatter = content[3:match.start()+3]
-assert re.search(r'^name:\s*spectra-data-analysis\s*$', frontmatter, re.M)
+assert re.search(r'^name:\s*spectrana-data-analysis\s*$', frontmatter, re.M)
 description = re.search(r'^description:\s*(.*)$', frontmatter, re.M)
 assert description and description.group(1).strip()
 assert len(description.group(1).strip().strip('"\'')) <= 1024
