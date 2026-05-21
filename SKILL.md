@@ -79,8 +79,10 @@ def load_spectrana_key() -> str:
 - Confirm with the user before uploading a new dataset.
 - Confirm with the user before deleting any dataset.
 - Before running analysis queries, clearly state that queries may consume Spectrana credits.
-- Upload files directly via curl or Python multipart upload. Do **not** load raw dataset contents into the LLM context.
-- Treat Spectrana's returned `analysis` as the expert output. Do not add your own interpretation unless explicitly labeled as separate.
+- Upload files directly via curl or Python multipart upload. Do **not** load raw dataset contents into the LLM context for analysis.
+- **Spectrana-source rule:** Hermes/assistant may synthesize, merge, compare, calculate, score, and visualize results **only when the source data/results come from Spectrana API responses** such as `analysis`, `execution_result`, `chart_specs`, `data_brief`, `data_summary`, or multiple Spectrana query outputs.
+- **Raw-file boundary:** Hermes/assistant must not independently inspect, parse, query, compute, analyze, summarize, score, or derive findings directly from uploaded/raw user files using pandas, SQL, spreadsheet parsing, Python scripts, manual file reads, or similar non-Spectrana processing.
+- Treat Spectrana's returned `analysis` and computed outputs as the source of truth. Any assistant synthesis must be traceable to Spectrana-provided outputs, not raw-file processing.
 
 ## Core Workflow
 
@@ -160,19 +162,32 @@ Result fields may include:
 
 If the user explicitly says to ask a question “as is” / “do not amend it,” send the exact query string unchanged in `/api/v1/chat/query`. Do not scope, clarify, rewrite, or add hidden analysis instructions unless the API requires separate structural fields such as `file_ids`.
 
-### Step 4 — Present Results
+### Step 4 — Present, Synthesize, and Visualize Spectrana Results
 
 When presenting Spectrana results, include:
 
-1. **Spectrana Analysis** — Present the `analysis` field faithfully. Do not paraphrase into new conclusions.
-2. **Tables / Execution Results** — If `execution_result` contains tabular data, format it as a markdown table.
+1. **Spectrana Analysis** — Present the `analysis` field faithfully.
+2. **Tables / Execution Results** — If `execution_result` contains tabular data, format or visualize it.
 3. **Chart** — If `chart_specs` is non-null, render and send the chart. This is mandatory.
 4. **Follow-up Suggestions** — Include if provided.
 
+Allowed assistant synthesis:
+
+- You may summarize, merge, compare, calculate percentages/deltas, rank, score, and visualize information **derived from Spectrana API responses**.
+- You may combine multiple Spectrana query outputs into one executive summary or report image.
+- You may create derived KPI cards or risk labels if they are based only on Spectrana-provided `analysis` / `execution_result` / `chart_specs` / context fields.
+- Clearly label source as Spectrana-derived when presenting synthesized output.
+
+Not allowed:
+
+- Do not open or parse the original dataset file to compute missing values, row-level metrics, scores, rankings, or findings.
+- Do not use pandas, SQL, DuckDB, Excel readers, manual XLSX/CSV parsing, or similar direct-file processing to answer analytical questions.
+
 Clearly label source:
 
-- `Spectrana analysis:` for Spectrana-sourced content
-- `My note:` only for separate operational comments or formatting notes
+- `Spectrana analysis:` for direct Spectrana-sourced content
+- `Spectrana-derived synthesis:` for your synthesis/visualization built only from Spectrana responses
+- `Operational note:` only for separate API/status/formatting comments
 
 ## Chart Rendering for Discord
 
@@ -307,20 +322,58 @@ Default for Spectrana analysis/comparison output: attach a professional report i
 
 ## Complex Analysis Failure Handling
 
-Spectrana analysis queries consume credits and may fail when the prompt asks for a large multi-step calculation, chart generation, top-N selection, trend analysis, and narrative synthesis all at once. Handle this conservatively:
+Spectrana analysis queries consume credits and may fail when the prompt asks for a large multi-step calculation, chart generation, top-N selection, trend analysis, and narrative synthesis all at once. Handle this conservatively while preserving the Spectrana-source boundary.
 
-1. **Before expensive/complex queries**, tell the user the query may consume credits.
-2. **Prefer scoped prompts**:
-   - First identify the relevant cohort, segment, or subset required by the user's question.
-   - Then run the trend, comparison, or summary query for that scoped subset.
-   - Then create the Discord report image from the returned results.
-3. **If Spectrana returns an API error, validation error, invalid generated code, or unusable analysis, do not present it as findings.**
-4. **Do not retry after a Spectrana error.** Retrying can flood the Spectrana system and may consume/trigger repeated processing. Stop after the failed response and be honest with the requester.
+### Data-processing boundary
+
+Hermes/assistant may synthesize, merge, compare, calculate, score, and visualize **Spectrana-provided outputs**. The assistant may use its judgment to turn one or more Spectrana responses into a clearer executive summary, report-card image, ranked list, KPI table, or composite score, as long as every analytical input comes from Spectrana API responses.
+
+Hermes/assistant is **not authorized to independently inspect, parse, query, compute, analyze, summarize, score, or derive findings directly from uploaded/raw user files**. Do not use pandas, SQL, DuckDB, Excel readers, CSV parsing, manual XLSX XML parsing, or similar direct-file processing to answer analytical questions.
+
+If Spectrana fails to generate usable analytical output, the assistant may make a **bounded retry through Spectrana only** by simplifying or decomposing the query. Do not perform local fallback analysis against the raw file.
+
+Retry/decomposition limits:
+
+- Maximum total attempts after seeing an error: **2 attempts total**. Count the failed original query as attempt 1; at most one additional retry/decomposition round is allowed unless the user explicitly asks for more.
+- Maximum parallel Spectrana calls in a decomposition round: **2 parallel calls**.
+- Before decomposing/retrying, tell the user that you are simplifying the request into smaller Spectrana queries to make it easier and faster for Spectrana to process.
+- If the simplified/decomposed Spectrana calls also fail or return unusable output, stop and report the failures/status. Do not keep trying and do not analyze the raw file locally.
+
+### Allowed examples
+
+- **Allowed:** If one broad Spectrana query fails, tell the user you are simplifying it, then run up to 2 smaller Spectrana queries in parallel (for example: one query for activity concentration and one query for login/terminal anomalies), then synthesize those Spectrana outputs into one result.
+- **Allowed:** Run three Spectrana queries — activity by user, suspicious login patterns, and unusual terminal usage — then merge those Spectrana results into one ranked risk-scoring report, as long as this is not part of a bounded error retry that exceeds the 2-parallel-call retry limit.
+- **Allowed:** Take Spectrana's `execution_result` table and calculate percentages, deltas, ranks, or simple derived KPI cards for visualization.
+- **Allowed:** Render a clean PNG report from Spectrana's `analysis`, `execution_result`, or `chart_specs`.
+- **Allowed:** If Spectrana returns a risk score table, group the scores into Low/Medium/High bands and explain the banding.
+
+### Not allowed examples
+
+- **Not allowed:** Open the uploaded Excel/CSV with pandas/openpyxl/DuckDB/SQL to calculate fraud scores when Spectrana fails.
+- **Not allowed:** Manually parse the `.xlsx` XML or read CSV rows to count users, IPs, events, revenue, refunds, or anomalies.
+- **Not allowed:** Use local code to recreate missing Spectrana analysis from the raw source file.
+- **Not allowed:** Read raw dataset contents into the LLM context and reason over them directly.
+
+Handle failures as follows:
+
+1. **Before expensive/complex queries**, tell the user the query may consume Spectrana credits.
+2. **Prefer scoped prompts to Spectrana** when possible:
+   - Ask Spectrana focused questions instead of one oversized prompt.
+   - It is acceptable to run multiple Spectrana queries and synthesize their outputs afterward.
+   - Still do not compute analytical subtasks from the raw file locally; analytical computation must come from Spectrana responses.
+3. **If Spectrana returns an API error, validation error, invalid generated code, empty/null result, or unusable analysis, use the bounded Spectrana retry rule.**
+   - Count the failed query as attempt 1.
+   - You may make at most one additional retry/decomposition round, for **2 total attempts maximum** after an error is encountered.
+   - In the retry/decomposition round, use no more than **2 parallel Spectrana calls**.
+   - Before retrying, tell the user: `Spectrana had trouble with the broad query, so I’m simplifying it into smaller Spectrana queries to make it easier and faster to process.`
+   - Synthesize successful retry outputs only if they come from Spectrana responses.
+   - If the bounded retry also fails, report the exact error/status in plain language and stop.
+   - Mention whether credits were refunded if the API says so.
+   - Save or attach the raw Spectrana API response JSON if useful.
+   - Do **not** attempt local deterministic fallback analysis against the raw file.
+4. **Do not continue retrying beyond the bounded limit unless the user explicitly asks for another retry/rephrase.** This avoids infinite retry loops, system flooding, and unnecessary credit usage.
 5. **Explain the error plainly in Discord:**
    - If the error is user-readable and not too technical, summarize it in simple language.
    - If the error is vague/technical/internal, say that Spectrana did not provide a meaningful or reliable analysis result.
-   - Most Spectrana errors are likely caused by the system being unable to validate the requested query/question due to insufficient data, missing data, ambiguous fields, or a query that is too complex for the current dataset.
 6. **Avoid compounding credit usage** after failures. If the API says credit was refunded, mention it. If the API call succeeded but the returned generated analysis was unusable, be transparent that credits may have been used but no reliable answer was produced.
 7. **When the user says “stop it,” stop immediately** and summarize only what was attempted; do not run more API/tool calls.
-
-For large or multi-step trend analyses, decompose the request into deterministic subtasks before calling Spectrana, but still do not retry automatically if Spectrana returns an error.
