@@ -32,7 +32,7 @@ All API calls except `/api/v1/health` require a Bearer token. In Hermes, the API
 Expected environment variable:
 
 ```bash
-SPECTRANA_API_KEY=spe_...
+SPECTRA_API_KEY=spe_...
 ```
 
 Never print or expose the key. When showing commands to users, redact the token as `Bearer ***`.
@@ -53,9 +53,9 @@ from pathlib import Path
 def load_spectrana_key() -> str:
     env = Path.home() / ".hermes" / ".env"
     for line in env.read_text().splitlines():
-        if line.startswith("SPECTRANA_API_KEY="):
+        if line.startswith("SPECTRA_API_KEY="):
             return line.split("=", 1)[1].strip().strip('"').strip("'")
-    raise RuntimeError("SPECTRANA_API_KEY is not configured in ~/.hermes/.env")
+    raise RuntimeError("SPECTRA_API_KEY is not configured in ~/.hermes/.env")
 ```
 
 ## Available REST API Endpoints
@@ -88,7 +88,7 @@ def load_spectrana_key() -> str:
 
 ### Step 0 — Verify API Key
 
-Before authenticated calls, verify `SPECTRANA_API_KEY` is available in `~/.hermes/.env`. If missing or unauthorized, ask the user for a valid `spe_...` key.
+Before authenticated calls, verify `SPECTRA_API_KEY` is available in `~/.hermes/.env`. If missing or unauthorized, ask the user for a valid `spe_...` key.
 
 ### Step 1 — Identify or Upload the File
 
@@ -109,7 +109,7 @@ Upload via direct file transfer only:
 
 ```bash
 curl -s -X POST "https://api.spectra.nuelo.ai/api/v1/files/upload" \
-  -H "Authorization: Bearer $SPECTRANA_API_KEY" \
+  -H "Authorization: Bearer $SPECTRA_API_KEY" \
   -F "file=@/absolute/path/to/file.csv"
 ```
 
@@ -228,21 +228,21 @@ curl -s "https://api.spectra.nuelo.ai/api/v1/health"
 
 ```bash
 curl -s -X GET "https://api.spectra.nuelo.ai/api/v1/files" \
-  -H "Authorization: Bearer $SPECTRANA_API_KEY"
+  -H "Authorization: Bearer $SPECTRA_API_KEY"
 ```
 
 ### Get File Context
 
 ```bash
 curl -s -X GET "https://api.spectra.nuelo.ai/api/v1/files/{file_id}/context" \
-  -H "Authorization: Bearer $SPECTRANA_API_KEY"
+  -H "Authorization: Bearer $SPECTRA_API_KEY"
 ```
 
 ### Run Query
 
 ```bash
 curl -s -X POST "https://api.spectra.nuelo.ai/api/v1/chat/query" \
-  -H "Authorization: Bearer $SPECTRANA_API_KEY" \
+  -H "Authorization: Bearer $SPECTRA_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"query":"Your question","file_ids":["file-id"],"web_search_enabled":false}'
 ```
@@ -253,7 +253,7 @@ Confirm with user first, then:
 
 ```bash
 curl -s -X DELETE "https://api.spectra.nuelo.ai/api/v1/files/{file_id}" \
-  -H "Authorization: Bearer $SPECTRANA_API_KEY"
+  -H "Authorization: Bearer $SPECTRA_API_KEY"
 ```
 
 ## Error Handling
